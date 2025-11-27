@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猜句子游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card h2 {
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            color: #00d9ff;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .code-output {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .code-output.show {
+            display: block;
+        }
+
+        .code-label {
+            color: #00ff88;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .code-value {
+            color: #fff;
+            user-select: all;
+        }
+
+        .copy-btn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+
+        /* Game area styles */
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .attempts-count {
+            color: #00ff88;
+            font-size: 1.1rem;
+        }
+
+        .hint-text {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .guesses-container {
+            margin-bottom: 20px;
+        }
+
+        .guess-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .char-box {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .char-box.correct {
+            background: #22c55e;
+            color: #fff;
+            animation: pop 0.3s ease;
+        }
+
+        .char-box.present {
+            background: #eab308;
+            color: #1a1a2e;
+            animation: pop 0.3s ease;
+        }
+
+        .char-box.absent {
+            background: #4b5563;
+            color: #9ca3af;
+            animation: pop 0.3s ease;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .game-result {
+            text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .game-result.show {
+            display: block;
+        }
+
+        .game-result.win {
+            background: rgba(34, 197, 94, 0.2);
+            border: 2px solid #22c55e;
+        }
+
+        .game-result.lose {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid #ef4444;
+        }
+
+        .game-result h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .game-result.win h3 {
+            color: #22c55e;
+        }
+
+        .game-result.lose h3 {
+            color: #ef4444;
+        }
+
+        .answer-reveal {
+            margin-top: 10px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            font-size: 1.2rem;
+        }
+
+        .hint-area {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 10px;
+            display: none;
+        }
+
+        .hint-area.show {
+            display: block;
+        }
+
+        .hint-title {
+            color: #00d9ff;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .hint-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .hint-char {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+        }
+
+        .hint-char.revealed {
+            background: #22c55e;
+            border: none;
+            color: #fff;
+        }
+
+        .hint-count {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .legend-box {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+        }
+
+        .legend-box.correct { background: #22c55e; }
+        .legend-box.present { background: #eab308; }
+        .legend-box.absent { background: #4b5563; }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Share link display */
+        .share-link {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 217, 255, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            display: none;
+        }
+
+        .share-link.show {
+            display: block;
+        }
+
+        .share-link-label {
+            color: #00d9ff;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .share-link-url {
+            word-break: break-all;
+            font-size: 0.85rem;
+            color: #fff;
+            user-select: all;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .char-box {
+                width: 32px;
+                height: 32px;
+                font-size: 1rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .tab-btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 猜句子</h1>
+        <p class="subtitle">Wordle 风格的中文猜句游戏</p>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('play')">开始游戏</button>
+            <button class="tab-btn" onclick="switchTab('create')">创建题目</button>
+            <button class="tab-btn" onclick="switchTab('check')">自查工具</button>
+        </div>
+
+        <!-- Play Game Tab -->
+        <div id="play-tab" class="tab-content active">
+            <div class="card">
+                <h2>📝 输入游戏码开始</h2>
+                <div class="input-group">
+                    <label>粘贴你朋友分享的游戏码：</label>
+                    <input type="text" id="game-code-input" placeholder="在这里粘贴游戏码...">
+                </div>
+                <button class="btn btn-primary" onclick="startGame()">开始猜句</button>
+            </div>
+
+            <div id="game-area" class="card" style="display: none;">
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-box correct"></div>
+                        <span>位置正确</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box present"></div>
+                        <span>字对位置错</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box absent"></div>
+                        <span>没有这个字</span>
+                    </div>
+                </div>
+
+                <div class="game-info">
+                    <span class="attempts-count">第 <span id="attempt-num">1</span> 次尝试</span>
+                    <span class="hint-text">句子长度：<span id="sentence-length">0</span> 个字符（不含标点）</span>
+                </div>
+
+                <div id="guesses-container" class="guesses-container"></div>
+
+                <div class="input-group">
+                    <input type="text" id="guess-input" placeholder="输入你的猜测...">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="submitGuess()">提交猜测</button>
+                    <button class="btn btn-secondary" onclick="getHint()">💡 提示</button>
+                    <button class="btn btn-secondary" onclick="giveUp()">🏳️ 认输</button>
+                </div>
+
+                <div id="hint-area" class="hint-area"></div>
+
+                <div id="game-result" class="game-result">
+                    <h3 id="result-title"></h3>
+                    <p id="result-message"></p>
+                    <div class="answer-reveal">
+                        答案：<strong id="answer-text"></strong>
+                    </div>
+                    <button class="btn btn-secondary" style="margin-top: 15px;" onclick="resetGame()">再来一局</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Puzzle Tab -->
+        <div id="create-tab" class="tab-content">
+            <div class="card">
+                <h2>✨ 创建新题目</h2>
+                <div class="input-group">
+                    <label>输入你想让朋友猜的句子：</label>
+                    <textarea id="sentence-input" placeholder="例如：今天天气真好"></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="generateCode()">生成游戏码</button>
+
+                <div id="code-output" class="code-output">
+                    <div class="code-label">🔐 游戏码（发给你的朋友）：</div>
+                    <div id="code-value" class="code-value"></div>
+                    <button class="btn btn-secondary copy-btn" onclick="copyCode()">📋 复制游戏码</button>
+                </div>
+
+                <div id="share-link" class="share-link">
+                    <div class="share-link-label">🔗 或者直接分享这个链接：</div>
+                    <div id="share-link-url" class="share-link-url"></div>
+                    <button class="btn btn-secondary copy-btn" onclick="copyLink()">📋 复制链接</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Self Check Tab -->
+        <div id="check-tab" class="tab-content">
+            <div class="card">
+                <h2>🔍 自查工具</h2>
+                <p style="color: #888; margin-bottom: 20px;">输入答案和猜测，查看颜色反馈（标点符号会被忽略）</p>
+                
+                <div class="legend" style="margin-bottom: 25px;">
+                    <div class="legend-item">
+                        <div class="legend-box correct"></div>
+                        <span>位置正确</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box present"></div>
+                        <span>字对位置错</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box absent"></div>
+                        <span>没有这个字</span>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>正确答案：</label>
+                    <input type="text" id="check-answer" placeholder="输入正确答案...">
+                </div>
+                <div class="input-group">
+                    <label>你的猜测：</label>
+                    <input type="text" id="check-guess" placeholder="输入猜测...">
+                </div>
+                <button class="btn btn-primary" onclick="selfCheck()">查看反馈</button>
+
+                <div id="check-result" class="guesses-container" style="margin-top: 20px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAnswer = '';
+        let attemptCount = 0;
+        let gameOver = false;
+        let revealedIndices = new Set();
+        let hintCount = 0;
+
+        // Punctuation regex - matches Chinese and English punctuation
+        const punctuationRegex = /[，。！？、；：""''（）【】《》—…·\s,.!?;:'"()\[\]{}<>\/\\@#$%^&*+=|~`_-]/g;
+
+        // Remove punctuation from string
+        function removePunctuation(str) {
+            return str.replace(punctuationRegex, '');
+        }
+
+        // Check if character is punctuation
+        function isPunctuation(char) {
+            return punctuationRegex.test(char);
+        }
+
+        // Compare guess with answer, considering punctuation
+        function compareStrings(answer, guess) {
+            const cleanAnswer = removePunctuation(answer);
+            const cleanGuess = removePunctuation(guess);
+            
+            const result = [];
+            const answerChars = [...cleanAnswer];
+            const guessChars = [...cleanGuess];
+            const answerCharCount = {};
+
+            // Count characters in answer
+            answerChars.forEach(char => {
+                answerCharCount[char] = (answerCharCount[char] || 0) + 1;
+            });
+
+            // First pass: mark correct positions
+            guessChars.forEach((char, i) => {
+                if (char === answerChars[i]) {
+                    result[i] = { char, status: 'correct' };
+                    answerCharCount[char]--;
+                } else {
+                    result[i] = { char, status: 'pending' };
+                }
+            });
+
+            // Second pass: mark present or absent
+            result.forEach((item, i) => {
+                if (item.status === 'pending') {
+                    if (answerCharCount[item.char] > 0) {
+                        item.status = 'present';
+                        answerCharCount[item.char]--;
+                    } else {
+                        item.status = 'absent';
+                    }
+                }
+            });
+
+            return result;
+        }
+
+        // Simple encoding/decoding using Base64 with a twist
+        function encode(str) {
+            // Add a simple salt and encode
+            const salt = 'wordle_game_v1_';
+            const combined = salt + str;
+            // Convert to Base64 and reverse it for extra obfuscation
+            const base64 = btoa(unescape(encodeURIComponent(combined)));
+            return base64.split('').reverse().join('');
+        }
+
+        function decode(encoded) {
+            try {
+                // Reverse and decode Base64
+                const reversed = encoded.split('').reverse().join('');
+                const decoded = decodeURIComponent(escape(atob(reversed)));
+                const salt = 'wordle_game_v1_';
+                if (decoded.startsWith(salt)) {
+                    return decoded.substring(salt.length);
+                }
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (tab === 'play') {
+                document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+                document.getElementById('play-tab').classList.add('active');
+            } else if (tab === 'create') {
+                document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+                document.getElementById('create-tab').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
+                document.getElementById('check-tab').classList.add('active');
+            }
+        }
+
+        function generateCode() {
+            const sentence = document.getElementById('sentence-input').value.trim();
+            if (!sentence) {
+                alert('请输入一个句子！');
+                return;
+            }
+
+            const code = encode(sentence);
+            document.getElementById('code-value').textContent = code;
+            document.getElementById('code-output').classList.add('show');
+
+            // Generate shareable link
+            const url = new URL(window.location.href);
+            url.hash = '';
+            url.search = '?code=' + encodeURIComponent(code);
+            document.getElementById('share-link-url').textContent = url.toString();
+            document.getElementById('share-link').classList.add('show');
+        }
+
+        function copyCode() {
+            const code = document.getElementById('code-value').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('游戏码已复制到剪贴板！');
+            });
+        }
+
+        function copyLink() {
+            const link = document.getElementById('share-link-url').textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('链接已复制到剪贴板！');
+            });
+        }
+
+        function startGame() {
+            const code = document.getElementById('game-code-input').value.trim();
+            if (!code) {
+                alert('请输入游戏码！');
+                return;
+            }
+
+            const decoded = decode(code);
+            if (!decoded) {
+                alert('无效的游戏码，请检查后重试！');
+                return;
+            }
+
+            currentAnswer = decoded;
+            attemptCount = 0;
+            gameOver = false;
+            revealedIndices = new Set();
+            hintCount = 0;
+
+            document.getElementById('game-area').style.display = 'block';
+            document.getElementById('sentence-length').textContent = removePunctuation(currentAnswer).length;
+            document.getElementById('guesses-container').innerHTML = '';
+            document.getElementById('game-result').classList.remove('show', 'win', 'lose');
+            document.getElementById('hint-area').classList.remove('show');
+            document.getElementById('hint-area').innerHTML = '';
+            document.getElementById('guess-input').value = '';
+            document.getElementById('guess-input').disabled = false;
+            updateAttemptCount();
+        }
+
+        function updateAttemptCount() {
+            document.getElementById('attempt-num').textContent = attemptCount + 1;
+        }
+
+        function submitGuess() {
+            if (gameOver) return;
+
+            const guess = document.getElementById('guess-input').value;
+            if (!guess) {
+                alert('请输入你的猜测！');
+                return;
+            }
+
+            const cleanGuess = removePunctuation(guess);
+            const cleanAnswer = removePunctuation(currentAnswer);
+
+            if (cleanGuess.length !== cleanAnswer.length) {
+                alert(`句子长度应该是 ${cleanAnswer.length} 个字符（不含标点），你输入了 ${cleanGuess.length} 个字符`);
+                return;
+            }
+
+            attemptCount++;
+            
+            // Compare and get result
+            const result = compareStrings(currentAnswer, guess);
+
+            // Display the guess
+            displayGuess(result);
+
+            // Check if won
+            if (cleanGuess === cleanAnswer) {
+                gameWon();
+            } else {
+                document.getElementById('guess-input').value = '';
+                updateAttemptCount();
+            }
+        }
+
+        function displayGuess(result) {
+            const container = document.getElementById('guesses-container');
+            const row = document.createElement('div');
+            row.className = 'guess-row';
+
+            result.forEach((item, index) => {
+                const box = document.createElement('div');
+                box.className = 'char-box';
+                box.textContent = item.char;
+                
+                // Add animation delay
+                setTimeout(() => {
+                    box.classList.add(item.status);
+                }, index * 100);
+
+                row.appendChild(box);
+            });
+
+            container.appendChild(row);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function gameWon() {
+            gameOver = true;
+            document.getElementById('guess-input').disabled = true;
+            
+            const resultDiv = document.getElementById('game-result');
+            resultDiv.classList.add('show', 'win');
+            document.getElementById('result-title').textContent = '🎉 恭喜你猜对了！';
+            let message = `你用了 ${attemptCount} 次尝试`;
+            if (hintCount > 0) {
+                message += `，使用了 ${hintCount} 次提示`;
+            }
+            document.getElementById('result-message').textContent = message;
+            document.getElementById('answer-text').textContent = currentAnswer;
+        }
+
+        function getHint() {
+            if (gameOver) return;
+
+            const cleanAnswer = removePunctuation(currentAnswer);
+            const totalChars = cleanAnswer.length;
+            
+            // Find unrevealed indices
+            const unrevealedIndices = [];
+            for (let i = 0; i < totalChars; i++) {
+                if (!revealedIndices.has(i)) {
+                    unrevealedIndices.push(i);
+                }
+            }
+
+            if (unrevealedIndices.length === 0) {
+                alert('所有字符都已提示！');
+                return;
+            }
+
+            // Reveal a random unrevealed character
+            const randomIndex = unrevealedIndices[Math.floor(Math.random() * unrevealedIndices.length)];
+            revealedIndices.add(randomIndex);
+            hintCount++;
+
+            // Update hint display
+            updateHintDisplay();
+        }
+
+        function updateHintDisplay() {
+            const cleanAnswer = removePunctuation(currentAnswer);
+            const hintArea = document.getElementById('hint-area');
+            
+            let html = '<div class="hint-title">💡 已揭示的字符：</div>';
+            html += '<div class="hint-content">';
+            
+            for (let i = 0; i < cleanAnswer.length; i++) {
+                if (revealedIndices.has(i)) {
+                    html += `<div class="hint-char revealed">${cleanAnswer[i]}</div>`;
+                } else {
+                    html += `<div class="hint-char">?</div>`;
+                }
+            }
+            
+            html += '</div>';
+            html += `<div class="hint-count">已使用 ${hintCount} 次提示，还剩 ${cleanAnswer.length - revealedIndices.size} 个字符未揭示</div>`;
+            
+            hintArea.innerHTML = html;
+            hintArea.classList.add('show');
+        }
+
+        function giveUp() {
+            if (gameOver) return;
+            
+            if (!confirm('确定要认输吗？将会显示正确答案。')) {
+                return;
+            }
+            
+            gameOver = true;
+            document.getElementById('guess-input').disabled = true;
+            
+            const resultDiv = document.getElementById('game-result');
+            resultDiv.classList.add('show', 'lose');
+            document.getElementById('result-title').textContent = '😅 没关系，下次再试！';
+            let message = `你尝试了 ${attemptCount} 次`;
+            if (hintCount > 0) {
+                message += `，使用了 ${hintCount} 次提示`;
+            }
+            document.getElementById('result-message').textContent = message;
+            document.getElementById('answer-text').textContent = currentAnswer;
+        }
+
+        function resetGame() {
+            document.getElementById('game-area').style.display = 'none';
+            document.getElementById('game-code-input').value = '';
+            currentAnswer = '';
+            attemptCount = 0;
+            gameOver = false;
+            revealedIndices = new Set();
+            hintCount = 0;
+        }
+
+        function selfCheck() {
+            const answer = document.getElementById('check-answer').value;
+            const guess = document.getElementById('check-guess').value;
+
+            if (!answer || !guess) {
+                alert('请输入答案和猜测！');
+                return;
+            }
+
+            const cleanAnswer = removePunctuation(answer);
+            const cleanGuess = removePunctuation(guess);
+
+            if (cleanGuess.length !== cleanAnswer.length) {
+                alert(`答案有 ${cleanAnswer.length} 个字符（不含标点），猜测有 ${cleanGuess.length} 个字符（不含标点），长度不匹配！`);
+                return;
+            }
+
+            const result = compareStrings(answer, guess);
+            
+            // Display result
+            const container = document.getElementById('check-result');
+            container.innerHTML = '';
+            
+            const row = document.createElement('div');
+            row.className = 'guess-row';
+
+            result.forEach((item, index) => {
+                const box = document.createElement('div');
+                box.className = 'char-box';
+                box.textContent = item.char;
+                
+                setTimeout(() => {
+                    box.classList.add(item.status);
+                }, index * 100);
+
+                row.appendChild(box);
+            });
+
+            container.appendChild(row);
+
+            // Show if it's correct
+            if (cleanGuess === cleanAnswer) {
+                const successMsg = document.createElement('div');
+                successMsg.style.cssText = 'text-align: center; margin-top: 15px; color: #22c55e; font-size: 1.2rem;';
+                successMsg.textContent = '✅ 完全正确！';
+                container.appendChild(successMsg);
+            }
+        }
+
+        // Handle Enter key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const activeElement = document.activeElement;
+                if (activeElement.id === 'guess-input') {
+                    submitGuess();
+                } else if (activeElement.id === 'game-code-input') {
+                    startGame();
+                }
+            }
+        });
+
+        // Check for code in URL on page load
+        window.addEventListener('load', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            if (code) {
+                document.getElementById('game-code-input').value = code;
+                startGame();
+            }
+        });
+    </script>
+</body>
+</html>
